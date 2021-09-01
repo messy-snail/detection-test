@@ -20,7 +20,11 @@ LINE = cv2.LINE_AA
 if __name__=='__main__':
     # cam = rs.realsense()
     # cam.open()
-    cap = cv2.VideoCapture(2)
+    
+    # d435
+    # cap = cv2.VideoCapture(2)
+    # l515
+    cap = cv2.VideoCapture(3)
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1280)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 720)
     ge = gesture.gesture()
@@ -49,7 +53,7 @@ if __name__=='__main__':
         
         print(f"{count}개 오브젝트를 찾았습니다.")
 
-        ret = ge.run(poses)
+        angle, state, _ = ge.run(poses)
         for pose in poses:
             print(pose)
             print(pose.Keypoints)
@@ -66,8 +70,12 @@ if __name__=='__main__':
         cv2.putText(result, "Total: " + str(count), (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
         cv2.putText(result, "Total: " + str(count), (10, 20), FONT, 0.5, (240, 240, 240), 1, LINE)
         
-        cv2.putText(result, ret, (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
-        cv2.putText(result, ret, (10, 40), FONT, 0.5, (240, 240, 240), 1, LINE)
+        cv2.putText(result, angle, (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
+        cv2.putText(result, angle, (10, 40), FONT, 0.5, (240, 240, 240), 1, LINE)
+
+        cv2.putText(result, state, (11, 60), FONT, 0.5, (32, 32, 32), 4, LINE)
+        cv2.putText(result, state, (10, 60), FONT, 0.5, (0, 0, 240), 1, LINE)
+
         # # show frames
         cv2.imshow('result', result)
         if cv2.waitKey(1) & 0xFF == ord('q'):

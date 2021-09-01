@@ -37,7 +37,7 @@ class gesture():
         
 
     def run(self, poses):
-        
+        neck = None
         for pose in poses:
             neck_idx = pose.FindKeypoint(self.keypoints_name_list.index('neck'))
 
@@ -76,5 +76,12 @@ class gesture():
                 self.right_angle = self.compute_angle(neck, right_shoulder, right_elbow)
 
         angle = f'left: {self.left_angle:.2f}, right: {self.right_angle:.2f}'
-
-        return angle
+        state = 'N/A'                
+        if self.left_angle>150 or self.right_angle>150:
+            state = 'STOP'                
+        
+        if neck is None:
+            return angle, state, neck
+        else:
+            return angle, state, (int(neck.y), int(neck.x))
+        

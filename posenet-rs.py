@@ -35,6 +35,8 @@ if __name__=='__main__':
         depth = copy.deepcopy(cam.depth_image)
         
         h,w,_ = image.shape
+        # h,w = depth.shape
+        print(f'h,w: {h}, {w}')
         rgba_image = cv2.cvtColor(image, cv2.COLOR_RGB2RGBA).astype(np.float32)
         rgba_image[:,:,3] = depth *cam.scale_factor
         # move the image to CUDA:
@@ -45,7 +47,7 @@ if __name__=='__main__':
         
         print(f"{count}개 오브젝트를 찾았습니다.")
 
-        ret = ge.run(poses)
+        angle, state, neck = ge.run(poses)
         for pose in poses:
             print(pose)
             print(pose.Keypoints)
@@ -58,12 +60,23 @@ if __name__=='__main__':
         numpyImg = jetson.utils.cudaToNumpy(cuda_image, w, h, 4)
         # now back to unit8
         result = numpyImg.astype(np.uint8)
+
+        zvalue = -1
+        if neck is not None:
+            print(f'neck: {neck}')
+            zvalue = depth[neck]*cam.scale_factor
         
         cv2.putText(result, "Total: " + str(count), (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
         cv2.putText(result, "Total: " + str(count), (10, 20), FONT, 0.5, (240, 240, 240), 1, LINE)
         
-        cv2.putText(result, ret, (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
-        cv2.putText(result, ret, (10, 40), FONT, 0.5, (240, 240, 240), 1, LINE)
+        cv2.putText(result, angle, (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
+        cv2.putText(result, angle, (10, 40), FONT, 0.5, (240, 240, 240), 1, LINE)
+
+        cv2.putText(result, state, (11, 60), FONT, 0.5, (32, 32, 32), 4, LINE)
+        cv2.putText(result, state, (10, 60), FONT, 0.5, (0, 240, 0), 1, LINE)
+
+        cv2.putText(result, f'Depth: {zvalue:.3f}m', (11, 80), FONT, 0.5, (32, 32, 32), 4, LINE)
+        cv2.putText(result, f'Depth: {zvalue:.3f}m', (10, 80), FONT, 0.5, (0, 0, 240), 1, LINE)
         # # show frames
         cv2.imshow('result', result)
         if cv2.waitKey(1) & 0xFF == ord('q'):
