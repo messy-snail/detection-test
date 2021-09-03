@@ -35,9 +35,9 @@ class realsense:
         self.config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
 
         if device_product_line == 'L500':
-            self.config.enable_stream(rs.stream.color, 960, 540, rs.format.rgb8, 30)
+            self.config.enable_stream(rs.stream.color, 960, 540, rs.format.bgr8, 30)
         else:
-            self.config.enable_stream(rs.stream.color, 640, 480, rs.format.rgb8, 30)
+            self.config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
             # config.enable_stream(rs.stream.color, 1280, 720, rs.format.bgr8, 30)
         profile = self.pipeline.start(self.config)
 
@@ -53,10 +53,10 @@ class realsense:
 
     def run(self):
         frames = self.pipeline.wait_for_frames()
-        aligned_frames = self.align.process(frames)
+        # aligned_frames = self.align.process(frames)
 
         # Get aligned frames
-        aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
+        aligned_depth_frame = frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
         color_frame = frames.get_color_frame()
 
         # Validate that both frames are valid

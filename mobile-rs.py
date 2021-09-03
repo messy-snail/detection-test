@@ -18,6 +18,7 @@ if __name__=='__main__':
     cam.open()
     
     net = jetson.inference.detectNet("ssd-mobilenet-v2", threshold=0.7)
+    net.SetOverlayAlpha(50);
 
     while (True):
         if cam.run() ==False:
@@ -43,11 +44,13 @@ if __name__=='__main__':
                 image = cv2.rectangle(result, (int(detection.ROI[0]), int(detection.ROI[1])),
                 (int(detection.ROI[2]), int(detection.ROI[3])),(0,0,255), 1, cv2.LINE_AA
                 )
+                # x,y order
                 center_pts = (int((detection.ROI[0]+detection.ROI[2])/2), int((detection.ROI[1]+detection.ROI[3])/2))
                 image = cv2.circle(image, (center_pts[0], center_pts[1]), 3, (0,0,255), -1, cv2.LINE_AA
                 )
                 print(f'depth[center_pts]: {depth[center_pts]}')
-                zvalue = depth[center_pts]*cam.scale_factor
+
+                zvalue = depth[center_pts[1],center_pts[0] ]*cam.scale_factor
                 cv2.putText(image, f'Depth: {zvalue:.3f}m' , (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
                 cv2.putText(image, f"Depth: {zvalue:.3f}m" , (10, 40), FONT, 0.5, (240, 240, 240), 1, LINE)
                 
