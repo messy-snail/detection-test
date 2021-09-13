@@ -1,7 +1,7 @@
 import numpy as np
 import json
 import math
-
+from collections import defaultdict
 class gesture():
     def __init__(self):
         self.angle_list = []
@@ -31,6 +31,10 @@ class gesture():
         self.right_elbow_position = None
         self.right_wrist_position = None
 
+        self.total_state_dict = defaultdict(str)
+        self.registration_id = -1
+        
+
     def compute_angle(self, neck_position, shoulder_position, elbow_position):
         vec1 = np.array([shoulder_position[0]-neck_position[0], shoulder_position[1]-neck_position[1]])
         vec2 = np.array([shoulder_position[0]-elbow_position[0], shoulder_position[1]-elbow_position[1]])
@@ -43,12 +47,8 @@ class gesture():
         deg = math.degrees(math.acos(cos_val))
         return deg
         
-    def run(self, poses):
-        neck = None
-        num_obj = len(poses)
-        # print(f'obj: {num_obj}')
+    def run(self, poses, depth, scale):
 
-        total_state=[]
         for pose in poses:
 
             self.neck_idx = pose.FindKeypoint(self.keypoints_name_list.index('neck'))
@@ -61,117 +61,170 @@ class gesture():
             self.right_elbow_idx = pose.FindKeypoint(self.keypoints_name_list.index('right_elbow'))
             self.right_wrist_idx = pose.FindKeypoint(self.keypoints_name_list.index('right_wrist'))
 
-            left_flags, right_flags = self.lr_checker()                
-
-            if left_flags ==[False, False] and right_flags==[False, False]:
-                continue
-
-            left_angle, right_angle = self.find_lr_angles(pose, left_flags, right_flags)             
+            left_angle, right_angle = self.find_lr_angles(pose)      
+            # left_angle, right_angle = self.find_lr_angles(pose, left_flags, right_flags)             
             
             state = self.find_pose(left_angle, right_angle)     
-            total_state.append(state)
+            print(f'left sholder: {left_angle[0]}, left elbow: {left_angle[1]}')
+            print(f'right sholder: {right_angle[0]}, right elbow: {right_angle[1]}')
 
-        # angle = f'left0: {self.left_angle[0]:.2f}, right0: {self.right_angle[0]:.2f}, left1: {self.left_angle[1]:.2f}, right1: {self.right_angle[1]:.2f}'
             
-        print(total_state)
-        return total_state
+            if self.total_state_dict[pose.ID]=='reg [RIGHT]':
+                if self.total_state_dict[pose.ID]!='N/A':
+                    self.total_state_dict[pose.ID] = state
+                if self.total_state_dict[pose.ID]=='reg [LEFT]' or self.total_state_dict[pose.ID]=='reg [BOTH]':
+                    self.registration_id = pose.ID
+            else:
+                self.total_state_dict[pose.ID] = state                
+
+
+        # print(self.total_state_dict)
+        
 
     def find_pose(self, left_angle, right_angle):
-        state = ['N/A', 'N/A']
+        state = 'N/A'
         
-        if left_angle[0]>150 and right_angle[0]>150:
-            state[0] = 'POSE1 [BOTH]'
-        else:
-            if left_angle[0]>150:
-                state[0] = 'POSE1 [LEFT]'
-            if right_angle[0]>150:
-                state[0] = 'POSE1 [RIGHT]'
+        registration_condition_both = left_angle[1]<80 and left_angle[1]>15 and right_angle[1]<80 and right_angle[1]>15
+        registration_condition_left = left_angle[1]<80 and left_angle[1]>15
+        registration_condition_right = right_angle[1]<80 and right_angle[1]>15
 
-        if left_angle[1]<80 and left_angle[1]>0 and right_angle[1]<80 and right_angle[1]>0:
-            state[1] = 'POSE2 [BOTH]'
+        if self.registration_id==-1:
+            if registration_condition_both:
+                state = 'reg [BOTH]'
+            else:
+                if registration_condition_left:
+                    state = 'reg [LEFT]'
+                if registration_condition_right:
+                    state = 'reg [RIGHT]'
         else:
-            if left_angle[1]<80 and left_angle[1]>0:
-                state[1] = 'POSE2 [LEFT]'
-            if right_angle[1]<80 and right_angle[1]>0:
-                state[1] = 'POSE2 [RIGHT]'
+            go_condition_right = right_angle[1]<90 and right_angle[1]>15 and \
+                abs(self.right_wrist_position[0] - self.right_elbow_position[0])< 20 and self.right_wrist_position[1] < self.right_elbow_position[1]
+  
+            go_condition_left = left_angle[1]<90 and left_angle[1]>15 and \
+                abs(self.left_wrist_position[0] - self.left_elbow_position[0])< 20 and self.left_wrist_position[1] < self.left_elbow_position[1]
+
+            # stop_condition = right_angle[1]<50 and right_angle[1]>15 and left_angle[1]<50 and left_angle[1]>15 and \
+            #     abs(self.right_elbow_position[1] - self.right_wrist_position[1])<20 and abs(self.left_elbow_position[1] - self.left_wrist_position[1])<20 and\
+            #         self.right_elbow_position[0]< self.right_wrist_position[0] and self.left_elbow_position[0] > self.left_wrist_position[0]
+
+            # right_condition = right_angle[1]<50 and right_angle[1]>15 and \
+            #     abs(self.right_elbow_position[1] - self.right_wrist_position[1])<30 and\
+            #         self.right_elbow_position[0]< self.right_wrist_position[0] 
+
+            # left_condition = left_angle[1]<50 and left_angle[1]>15 and \
+            #     abs(self.left_elbow_position[1] - self.left_wrist_position[1])<30 and \
+            #         self.left_elbow_position[0] > self.left_wrist_position[0]
+            right_condition = right_angle[1]<50 and right_angle[1]>15 and \
+                self.right_shoulder_position[1] < self.right_wrist_position[1]and\
+                    self.right_elbow_position[0]< self.right_wrist_position[0] 
+
+            left_condition = left_angle[1]<50 and left_angle[1]>15 and \
+                self.left_shoulder_position[1] < self.left_wrist_position[1]and\
+                    self.left_elbow_position[0] > self.left_wrist_position[0]            
+
+            if go_condition_right ^ go_condition_left:
+                state = 'GO'
+            if left_condition and right_condition:
+                state = 'STOP'
+            else:
+                if left_condition:
+                    state = 'LEFT'
+                if right_condition:
+                    state = 'RIGHT'
+
+
+
+                
+
+                        
         return state
 
-    def lr_checker(self):
-        left_flags = [False, False]
-        right_flags = [False, False]
-        
-        # 왼쪽 숄더 각도 판단이 가능할 때
-        if self.left_shoulder_idx > 0 and self.left_elbow_idx>0 and self.neck_idx>0:
-            left_flags[0] = True
-        # 오른쪽 숄더 각도 판단이 가능할 때
-        if self.right_shoulder_idx > 0 and self.right_elbow_idx>0 and self.neck_idx>0:
-            right_flags[0] = True
-        # 왼쪽 엘보우 각도 판단이 가능할 때
-        if self.left_shoulder_idx > 0 and self.left_elbow_idx>0 and self.left_wrist_idx>0:
-            left_flags[1] = True
-        # 오른쪽 엘보우 각도 판단이 가능할 때            
-        if self.right_shoulder_idx > 0 and self.right_elbow_idx>0 and self.right_wrist_idx>0:
-            right_flags[1] = True
+  
 
-        return left_flags,right_flags
+    def find_lr_angles(self, pose):
 
-    def find_lr_angles(self, pose, left_flags, right_flags):
+        self.compute_position(pose)                        
 
-        left_angle = [-1, -1]
-        right_angle = [-1, -1]
+        left_angles, right_angles = self.compute_lr_angles()                                                
 
-        if left_flags[0]:
-            neck_key_pts = pose.Keypoints[self.neck_idx]    
-            left_shoulder_key_pts = pose.Keypoints[self.left_shoulder_idx]      
-            left_elbow_key_pts = pose.Keypoints[self.left_elbow_idx]
+        return left_angles, right_angles 
 
-            self.neck_position = (neck_key_pts.x, neck_key_pts.y)
-            self.left_shoulder_position = (left_shoulder_key_pts.x, left_shoulder_key_pts.y)
-            self.left_elbow_position = (left_elbow_key_pts.x, left_elbow_key_pts.y)
-                
-            left_angle[0] =self.compute_angle(self.neck_position, 
+    def compute_lr_angles(self):
+        left_angles = [-1, -1]
+        right_angles = [-1, -1]
+
+        left_angle0_condition = self.neck_idx>0 and self.left_shoulder_idx>0 and self.left_elbow_idx>0
+        rightt_angle0_condition = self.neck_idx>0 and self.right_shoulder_idx>0 and self.right_elbow_idx>0
+
+        left_angle1_condition = self.left_shoulder_idx>0 and self.left_elbow_idx>0 and self.left_wrist_idx>0
+        rightt_angle1_condition = self.right_shoulder_idx>0 and self.right_elbow_idx>0 and self.right_wrist_idx>0
+
+        if left_angle0_condition:
+            left_angles[0] =self.compute_angle(self.neck_position, 
                                               self.left_shoulder_position, 
-                                              self.left_elbow_position)
-        if right_flags[0]:
-            neck_key_pts = pose.Keypoints[self.neck_idx]          
-            right_shoulder_key_pts = pose.Keypoints[self.right_shoulder_idx]  
-            right_elbow_key_pts = pose.Keypoints[self.right_elbow_idx]
+                                              self.left_elbow_position)      
 
-            self.neck_position = (neck_key_pts.x, neck_key_pts.y)
-            self.right_shoulder_position = (right_shoulder_key_pts.x, right_shoulder_key_pts.y)
-            self.right_elbow_position = (right_elbow_key_pts.x, right_elbow_key_pts.y)
-
-            right_angle[0] = self.compute_angle(self.neck_position, 
+        if rightt_angle0_condition:
+            right_angles[0] = self.compute_angle(self.neck_position, 
                                                 self.right_shoulder_position, 
                                                 self.right_elbow_position)
+        if left_angle1_condition:
+            left_angles[1] =self.compute_angle(self.left_shoulder_position, 
+                                              self.left_elbow_position, 
+                                              self.left_wrist_position)      
+                                              
+        if rightt_angle1_condition:
+            right_angles[1] = self.compute_angle(self.right_shoulder_position, 
+                                                self.right_elbow_position, 
+                                                self.right_wrist_position)
+                                                
+        return left_angles,right_angles
 
+    def compute_position(self, pose):
+        ###### NECK
+        if self.neck_idx>0:
+            neck_key_pts = pose.Keypoints[self.neck_idx]
+            self.neck_position = (neck_key_pts.x, neck_key_pts.y)
+        else:
+            self.neck_position = None
 
-        if left_flags[1]:
-            left_shoulder_key_pts = pose.Keypoints[self.left_shoulder_idx]      
-            left_elbow_key_pts = pose.Keypoints[self.left_elbow_idx]
-            left_wrist_key_pts = pose.Keypoints[self.left_wrist_idx]  
-
+        ###### LEFT SOULDER, ELBOW, WRIST
+        if self.left_shoulder_idx>0:
+            left_shoulder_key_pts = pose.Keypoints[self.left_shoulder_idx]   
             self.left_shoulder_position = (left_shoulder_key_pts.x, left_shoulder_key_pts.y)
+        else:
+            self.left_shoulder_position = None         
+
+        if self.left_elbow_idx>0:
+            left_elbow_key_pts = pose.Keypoints[self.left_elbow_idx]
             self.left_elbow_position = (left_elbow_key_pts.x, left_elbow_key_pts.y)
+        else:
+            self.left_elbow_position = None         
+
+        if self.left_wrist_idx>0:
+            left_wrist_key_pts = pose.Keypoints[self.left_wrist_idx]
             self.left_wrist_position = (left_wrist_key_pts.x, left_wrist_key_pts.y)
-                
-            left_angle[1] =self.compute_angle(self.left_shoulder_position, 
-                                                   self.left_elbow_position, 
-                                                   self.left_wrist_position)
-  
-        if right_flags[1]:
-            right_shoulder_key_pts = pose.Keypoints[self.right_shoulder_idx]      
-            right_elbow_key_pts = pose.Keypoints[self.right_elbow_idx]
-            right_wrist_key_pts = pose.Keypoints[self.right_wrist_idx]  
+        else:
+            self.left_wrist_position = None    
 
+     
+        ###### RIGHT SOULDER, ELBOW, WRIST
+        if self.right_shoulder_idx>0:
+            right_shoulder_key_pts = pose.Keypoints[self.right_shoulder_idx]  
             self.right_shoulder_position = (right_shoulder_key_pts.x, right_shoulder_key_pts.y)
-            self.right_elbow_position = (right_elbow_key_pts.x, right_elbow_key_pts.y)
-            self.right_wrist_position = (right_wrist_key_pts.x, right_wrist_key_pts.y)
+        else:
+            self.right_shoulder_position = None
 
-            right_angle[1] =self.compute_angle(self.right_shoulder_position, 
-                                                    self.right_elbow_position, 
-                                                    self.right_wrist_position)
-
-        return left_angle, right_angle                                                    
+        if self.right_elbow_idx>0:
+            right_elbow_key_pts = pose.Keypoints[self.right_elbow_idx]            
+            self.right_elbow_position = (right_elbow_key_pts.x, right_elbow_key_pts.y)    
+        else:
+            self.right_elbow_position = None
+               
+        if self.right_wrist_idx>0:
+            right_wrist_key_pts = pose.Keypoints[self.right_wrist_idx]            
+            self.right_wrist_position = (right_wrist_key_pts.x, right_wrist_key_pts.y)    
+        else:
+            self.right_wrist_position = None
 
         

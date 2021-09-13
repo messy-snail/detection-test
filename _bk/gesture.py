@@ -107,9 +107,9 @@ class gesture():
         if self.left_angle[1]<80 and self.left_angle[1]>0 and self.right_angle[1]<80 and self.right_angle[1]>0:
             state[1] = 'POSE2 [BOTH]'
         else:
-            if self.left_angle[1]<80 and self.left_angle[1]>0:
+            if self.left_angle[1]<70 and self.left_angle[1]>0:
                 state[1] = 'POSE2 [LEFT]'
-            if self.right_angle[1]<80 and self.right_angle[1]>0:
+            if self.right_angle[1]<70 and self.right_angle[1]>0:
                 state[1] = 'POSE2 [RIGHT]'                
 
         if neck is None:

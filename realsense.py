@@ -7,6 +7,8 @@ class realsense:
         self.pipeline = None
         self.config = None
         self.align = None
+
+        self.depth_intrinsic = None
         self.scale_factor = None
 
         self.depth_image = None
@@ -49,15 +51,19 @@ class realsense:
         clipping_distance = clipping_distance_in_meters / self.scale_factor
 
         align_to = rs.stream.color
+        # align_to = rs.stream.depth
         self.align = rs.align(align_to)
 
     def run(self):
         frames = self.pipeline.wait_for_frames()
         aligned_frames = self.align.process(frames)
 
+        
         # Get aligned frames
         aligned_depth_frame = aligned_frames.get_depth_frame() # aligned_depth_frame is a 640x480 depth image
-        color_frame = frames.get_color_frame()
+        # color_frame = frames.get_color_frame()
+        color_frame = aligned_frames.get_color_frame()
+        self.depth_intrinsic = aligned_frames.profile.as_video_stream_profile().intrinsics
 
         # Validate that both frames are valid
         if not aligned_depth_frame or not color_frame:
