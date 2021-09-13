@@ -18,6 +18,7 @@ import time
 FONT = cv2.FONT_HERSHEY_SIMPLEX
 LINE = cv2.LINE_AA
 
+KEEP_FRAME_NUM = 5
 
 if __name__=='__main__':
     cam = rs.realsense()
@@ -71,7 +72,7 @@ if __name__=='__main__':
                 cv2.putText(id_img, f'{i}', (10, 40), FONT, 0.5, (240, 240, 240), 1, LINE)   
         
         
-        
+        operator=None
         if count>0:
             index = ge.registration_id
             if index>=0:
@@ -84,24 +85,26 @@ if __name__=='__main__':
                         if prev_cmd==cmd:
                             frame_counter+=1
                         else:
-                            frame_counter=0                            
+                            frame_counter=0     
+                            # final_cmd='N/A'                       
                         
-                        if frame_counter>10:
+                        if frame_counter>KEEP_FRAME_NUM:
                             frame_counter=0     
                             final_cmd = cmd            
                         prev_cmd = cmd  
                                        
                         cv2.putText(operator, final_cmd, (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
                         cv2.putText(operator, final_cmd, (10, 20), FONT, 0.5, (0, 240, 0), 1, LINE)
-                    else:
-                        cv2.putText(operator, 'YOU', (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
-                        cv2.putText(operator, 'YOU', (10, 20), FONT, 0.5, (0, 0, 240), 1, LINE)                            
+                    # else:
+                    #     cv2.putText(operator, 'N/A', (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
+                    #     cv2.putText(operator, 'N/A', (10, 20), FONT, 0.5, (0, 0, 240), 1, LINE)                            
                     
                     # cv2.imshow('Operator', operator)
-            else:
-                cv2.putText(result, 'No Operator', (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
-                cv2.putText(result, 'No Operator', (10, 40), FONT, 0.5, (0, 0, 240), 1, LINE)                
-        
+            # else:
+            #     cv2.putText(result, 'No Operator', (11, 40), FONT, 0.5, (32, 32, 32), 4, LINE)
+            #     cv2.putText(result, 'No Operator', (10, 40), FONT, 0.5, (0, 0, 240), 1, LINE)                
+        cv2.putText(operator, final_cmd, (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
+        cv2.putText(operator, final_cmd, (10, 20), FONT, 0.5, (0, 240, 0), 1, LINE)
         cv2.imshow('Pose Candidate', result)
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break

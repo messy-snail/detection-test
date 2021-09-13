@@ -98,10 +98,10 @@ class gesture():
                     state = 'reg [RIGHT]'
         else:
             go_condition_right = right_angle[1]<90 and right_angle[1]>15 and \
-                abs(self.right_wrist_position[0] - self.right_elbow_position[0])< 20 and self.right_wrist_position[1] < self.right_elbow_position[1]
+                self.right_wrist_position[1] < self.right_elbow_position[1]
   
             go_condition_left = left_angle[1]<90 and left_angle[1]>15 and \
-                abs(self.left_wrist_position[0] - self.left_elbow_position[0])< 20 and self.left_wrist_position[1] < self.left_elbow_position[1]
+                self.left_wrist_position[1] < self.left_elbow_position[1]
 
             # stop_condition = right_angle[1]<50 and right_angle[1]>15 and left_angle[1]<50 and left_angle[1]>15 and \
             #     abs(self.right_elbow_position[1] - self.right_wrist_position[1])<20 and abs(self.left_elbow_position[1] - self.left_wrist_position[1])<20 and\
