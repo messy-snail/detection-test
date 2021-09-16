@@ -33,6 +33,9 @@ class gesture():
 
         self.total_state_dict = defaultdict(str)
         self.registration_id = -1
+
+        self.left_angle = [-1, -1]
+        self.right_angle = [-1, -1]
         
 
     def compute_angle(self, neck_position, shoulder_position, elbow_position):
@@ -61,12 +64,12 @@ class gesture():
             self.right_elbow_idx = pose.FindKeypoint(self.keypoints_name_list.index('right_elbow'))
             self.right_wrist_idx = pose.FindKeypoint(self.keypoints_name_list.index('right_wrist'))
 
-            left_angle, right_angle = self.find_lr_angles(pose)      
+            self.left_angle, self.right_angle = self.find_lr_angles(pose)      
             # left_angle, right_angle = self.find_lr_angles(pose, left_flags, right_flags)             
             
-            state = self.find_pose(left_angle, right_angle)     
-            print(f'left sholder: {left_angle[0]}, left elbow: {left_angle[1]}')
-            print(f'right sholder: {right_angle[0]}, right elbow: {right_angle[1]}')
+            state = self.find_pose(self.left_angle, self.right_angle)     
+            print(f'left shoulder: {self.left_angle[0]}, left elbow: {self.left_angle[1]}')
+            print(f'right shoulder: {self.right_angle[0]}, right elbow: {self.right_angle[1]}')
 
             
             if self.total_state_dict[pose.ID]=='reg [RIGHT]':
@@ -75,15 +78,13 @@ class gesture():
                 if self.total_state_dict[pose.ID]=='reg [LEFT]' or self.total_state_dict[pose.ID]=='reg [BOTH]':
                     self.registration_id = pose.ID
             else:
-                self.total_state_dict[pose.ID] = state                
-
-
+                self.total_state_dict[pose.ID] = state
         # print(self.total_state_dict)
         
 
     def find_pose(self, left_angle, right_angle):
         state = 'N/A'
-        
+
         registration_condition_both = left_angle[1]<80 and left_angle[1]>15 and right_angle[1]<80 and right_angle[1]>15
         registration_condition_left = left_angle[1]<80 and left_angle[1]>15
         registration_condition_right = right_angle[1]<80 and right_angle[1]>15
@@ -103,27 +104,18 @@ class gesture():
             go_condition_left = left_angle[1]<90 and left_angle[1]>15 and \
                 self.left_wrist_position[1] < self.left_elbow_position[1]
 
-            # stop_condition = right_angle[1]<50 and right_angle[1]>15 and left_angle[1]<50 and left_angle[1]>15 and \
-            #     abs(self.right_elbow_position[1] - self.right_wrist_position[1])<20 and abs(self.left_elbow_position[1] - self.left_wrist_position[1])<20 and\
-            #         self.right_elbow_position[0]< self.right_wrist_position[0] and self.left_elbow_position[0] > self.left_wrist_position[0]
-
-            # right_condition = right_angle[1]<50 and right_angle[1]>15 and \
-            #     abs(self.right_elbow_position[1] - self.right_wrist_position[1])<30 and\
-            #         self.right_elbow_position[0]< self.right_wrist_position[0] 
-
-            # left_condition = left_angle[1]<50 and left_angle[1]>15 and \
-            #     abs(self.left_elbow_position[1] - self.left_wrist_position[1])<30 and \
-            #         self.left_elbow_position[0] > self.left_wrist_position[0]
-            right_condition = right_angle[1]<50 and right_angle[1]>15 and \
+            right_condition = right_angle[1]<55 and right_angle[1]>15 and \
                 self.right_shoulder_position[1] < self.right_wrist_position[1]and\
                     self.right_elbow_position[0]< self.right_wrist_position[0] 
 
-            left_condition = left_angle[1]<50 and left_angle[1]>15 and \
+            left_condition = left_angle[1]<55 and left_angle[1]>15 and \
                 self.left_shoulder_position[1] < self.left_wrist_position[1]and\
                     self.left_elbow_position[0] > self.left_wrist_position[0]            
 
             if go_condition_right ^ go_condition_left:
                 state = 'GO'
+            if go_condition_right and go_condition_left:
+                state = 'FOLLOW'                    
             if left_condition and right_condition:
                 state = 'STOP'
             else:
@@ -132,20 +124,11 @@ class gesture():
                 if right_condition:
                     state = 'RIGHT'
 
-
-
-                
-
-                        
         return state
 
-  
-
     def find_lr_angles(self, pose):
-
-        self.compute_position(pose)                        
-
-        left_angles, right_angles = self.compute_lr_angles()                                                
+        self.compute_position(pose)
+        left_angles, right_angles = self.compute_lr_angles()
 
         return left_angles, right_angles 
 
@@ -160,24 +143,17 @@ class gesture():
         rightt_angle1_condition = self.right_shoulder_idx>0 and self.right_elbow_idx>0 and self.right_wrist_idx>0
 
         if left_angle0_condition:
-            left_angles[0] =self.compute_angle(self.neck_position, 
-                                              self.left_shoulder_position, 
-                                              self.left_elbow_position)      
+            left_angles[0] =self.compute_angle(self.neck_position,self.left_shoulder_position,self.left_elbow_position)
 
         if rightt_angle0_condition:
-            right_angles[0] = self.compute_angle(self.neck_position, 
-                                                self.right_shoulder_position, 
+            right_angles[0] = self.compute_angle(self.neck_position,self.right_shoulder_position, 
                                                 self.right_elbow_position)
         if left_angle1_condition:
-            left_angles[1] =self.compute_angle(self.left_shoulder_position, 
-                                              self.left_elbow_position, 
-                                              self.left_wrist_position)      
-                                              
+            left_angles[1] =self.compute_angle(self.left_shoulder_position,self.left_elbow_position,self.left_wrist_position)
+
         if rightt_angle1_condition:
-            right_angles[1] = self.compute_angle(self.right_shoulder_position, 
-                                                self.right_elbow_position, 
-                                                self.right_wrist_position)
-                                                
+            right_angles[1] = self.compute_angle(self.right_shoulder_position,self.right_elbow_position,self.right_wrist_position)
+
         return left_angles,right_angles
 
     def compute_position(self, pose):
@@ -207,7 +183,6 @@ class gesture():
         else:
             self.left_wrist_position = None    
 
-     
         ###### RIGHT SOULDER, ELBOW, WRIST
         if self.right_shoulder_idx>0:
             right_shoulder_key_pts = pose.Keypoints[self.right_shoulder_idx]  
@@ -226,5 +201,3 @@ class gesture():
             self.right_wrist_position = (right_wrist_key_pts.x, right_wrist_key_pts.y)    
         else:
             self.right_wrist_position = None
-
-        

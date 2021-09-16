@@ -24,10 +24,11 @@ if __name__ == '__main__' :
     # 트레킹 함수 선택
     tracker_types = ['BOOSTING', 'MIL','KCF', 'TLD', 'MEDIANFLOW', 'GOTURN']
     # 기본 KCF(Kernelized Correlation Filters)가 속도가 빠르다.
-    tracker_type = tracker_types[2]
+    tracker_type = tracker_types[1]
     
     #3.3 이상
     if tracker_type == 'BOOSTING':
+        # cv2.
         tracker = cv2.TrackerBoosting_create()
     if tracker_type == 'MIL':
         tracker = cv2.TrackerMIL_create()
@@ -51,7 +52,7 @@ if __name__ == '__main__' :
     #얼굴인식 함수 생성
     face_cascade = cv2.CascadeClassifier()
     #얼굴인식용 haar 불러오기
-    face_cascade.load('/usr/local/share/OpenCV/haarcascades/haarcascade_frontalface_default.xml')
+    face_cascade.load('/home/rainbow/haarcascades/haarcascade_frontalface_default.xml')
 
     #추적 상태 저장용 변수
     TrackingState = 0
@@ -73,6 +74,8 @@ if __name__ == '__main__' :
             grayframe = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             #히스토그램 평활화(재분할)
             grayframe = cv2.equalizeHist(grayframe)
+            cv2.imshow('grayframe', grayframe)
+            cv2.waitKey(10)
             #얼굴 인식
             faces  = face_cascade.detectMultiScale(grayframe, 1.1, 5, 0, (30, 30))
 
@@ -93,6 +96,7 @@ if __name__ == '__main__' :
         elif TrackingState == TRACKING_STATE_INIT:
             #추적 함수 초기화
             #얼굴인식으로 가져온 위치와 크기를 함께 넣어준다.
+            print(TrackingROI)
             ok = tracker.init(frame, TrackingROI)
             if ok:
                 #성공하였다면 추적 동작상태로 변경

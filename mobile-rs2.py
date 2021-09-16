@@ -18,7 +18,7 @@ if __name__=='__main__':
     cam.open()
     
     net = jetson.inference.detectNet("ssd-mobilenet-v2", threshold=0.7)
-    net.SetOverlayAlpha(50);
+    net.SetOverlayAlpha(60);
 
     while (True):
         if cam.run() ==False:
@@ -42,8 +42,8 @@ if __name__=='__main__':
         for i in range(0, count):
             id_img = result[int(detections[i].ROI[1]):int(detections[i].ROI[3]), int(detections[i].ROI[0]):int(detections[i].ROI[2]), :]
             if id_img.shape[0] !=0 and id_img.shape[1] !=0:
-                cv2.putText(id_img, f'{i}', (11, 35), FONT, 0.5, (32, 32, 32), 4, LINE)
-                cv2.putText(id_img, f'{i}', (10, 35), FONT, 0.5, (240, 240, 240), 1, LINE)   
+                cv2.putText(id_img, f'{i}', (11, 30), FONT, 0.5, (32, 32, 32), 4, LINE)
+                cv2.putText(id_img, f'{i}', (10, 20), FONT, 0.5, (240, 240, 240), 1, LINE)   
         
         cv2.putText(result, "Total: " + str(count), (11, 20), FONT, 0.5, (32, 32, 32), 4, LINE)
         cv2.putText(result, "Total: " + str(count), (10, 20), FONT, 0.5, (240, 240, 240), 1, LINE)

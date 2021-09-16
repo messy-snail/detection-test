@@ -73,3 +73,7 @@ class realsense:
         self.color_image = np.asanyarray(color_frame.get_data())
         return True
         
+    def get_position(self, x, y):
+        depth = self.depth_image[y,x]*self.scale_factor
+        xyz =  rs.rs2_deproject_pixel_to_point(self.depth_intrinsic, [x, y], depth)
+        return xyz
